@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Text2Curl harness</title><script src="../inject.js"></script><script src="../content.js"></script></head>
+<body style="font-family:sans-serif;max-width:720px;margin:24px auto">
+<h1>Static heading (server HTML)</h1>
+<h3>Users (fetch GET with auth header)</h3>
+<div id="users"></div>
+<p>Order total (XHR POST): <b id="total"></b></p>
+<h3>Product (image URL comes from JSON)</h3>
+<div id="product"></div>
+<p>
+  <button id="save">Save filter (POST on click)</button>
+  <button id="broken">Broken call (404)</button>
+</p>
+<p>Search box test: the hidden value <code>secret-shelf-42</code> is only in an API response, not shown on the page.</p>
+<script>
+  fetch('api/users.json?api_key=demo-key-123&page=1', { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer demo.jwt.token' } })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('users').innerHTML =
+        d.users.map(u => `<div class="u"><span class="name">${u.name}</span> — <span class="city">${u.city}</span></div>`).join('');
+    });
+  const x = new XMLHttpRequest();
+  x.open('POST', 'api/order.json');
+  x.setRequestHeader('Content-Type', 'application/json');
+  x.onload = () => { const o = JSON.parse(x.responseText); document.getElementById('total').textContent = o.order.total.toLocaleString('en-US'); };
+  x.send(JSON.stringify({ id: 42, password: 'hunter2' }));
+  fetch('api/products.json').then(r => r.json()).then(d => {
+    const p = d.items[0];
+    document.getElementById('product').innerHTML = `<img id="pimg" src="${p.image}" width="120" height="80" alt=""> <span>${p.title}</span>`;
+  });
+  fetch('api/hidden.json');
+  document.getElementById('save').onclick = () =>
+    fetch('api/order.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filter: 'blue', sort: 'price' }) });
+  document.getElementById('broken').onclick = () => fetch('api/missing.json');
+</script>
+</body></html>
