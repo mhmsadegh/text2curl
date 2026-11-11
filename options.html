@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Text2Curl · AI settings</title>
+<style>
+  :root{--accent:#e8590c;--bg:#f7f7f8;--card:#fff;--fg:#1d1d22;--mut:#6b6b76;--line:#e3e3e8;--ok:#2b8a3e;--bad:#c92a2a}
+  @media (prefers-color-scheme: dark){:root{--bg:#121214;--card:#1b1b1f;--fg:#ececf1;--mut:#9a9aa5;--line:#2e2e33;--ok:#8ce99a;--bad:#ffa8a8}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+  main{max-width:760px;margin:0 auto;padding:28px 16px 60px}
+  header{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+  header img{width:40px;height:40px;border-radius:10px}
+  h1{font-size:20px;margin:0}
+  h1 small{display:block;font-size:13px;font-weight:400;color:var(--mut)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  h2{font-size:15px;margin:0 0 12px}
+  label{display:block;font-weight:600;margin:12px 0 4px}
+  .hint{color:var(--mut);font-size:12.5px;margin-top:4px}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  .presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  button{font:600 13px system-ui,sans-serif;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:8px 14px;cursor:pointer}
+  button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.chip{font-weight:500;padding:4px 10px;border-radius:999px;font-size:12.5px}
+  .actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center}
+  .msg{font-size:13px}
+  .msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 6px;color:var(--mut);font-size:13px}
+  .filters label{display:flex;gap:6px;align-items:center;font-weight:400;margin:0}
+  .filters input{width:auto}
+  .models{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+  .m{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .m:last-child{border-bottom:0}
+  .m:hover{background:var(--bg)}
+  .m.sel{background:rgba(232,89,12,.10);outline:1px solid var(--accent)}
+  .m .id{font:12.5px Consolas,monospace;word-break:break-all}
+  .m .meta{grid-column:1/-1;color:var(--mut);font-size:12px}
+  .tag{font-size:11px;border-radius:999px;padding:1px 7px;border:1px solid var(--line);margin-left:4px;white-space:nowrap}
+  .tag.rec{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .tag.schema{color:var(--ok)}
+  ul{margin:6px 0 0;padding-left:18px}
+  code{font-family:Consolas,monospace;font-size:12.5px}
+</style>
+</head>
+<body>
+<main>
+  <header><img src="icons/icon128.png" alt=""><h1>Text2Curl · AI search<small>Ask in plain language which API responses talk about something.</small></h1></header>
+
+  <section class="card">
+    <h2>1. Provider</h2>
+    <label for="base">Base URL (any OpenAI-compatible API)</label>
+    <input id="base" placeholder="https://openrouter.ai/api/v1" spellcheck="false">
+    <div class="presets" id="presets"></div>
+    <label for="key">API key</label>
+    <div class="row"><input id="key" type="password" placeholder="sk-…  (leave empty for local Ollama / LM Studio)" autocomplete="off" spellcheck="false">
+      <button id="showkey" style="flex:none">Show</button></div>
+    <div class="filters" style="margin-top:10px">
+      <label><input type="checkbox" id="remember"> Remember the key after the browser is closed</label>
+      <button id="forget" class="chip">Delete key</button>
+    </div>
+    <div class="hint">
+      The key stays <b>inside the extension only</b>: web pages and other extensions cannot read it, it is never synced to your Google account,
+      and it is sent only to the Base URL above (from the extension's background worker, not from the page).
+      By default it is kept <b>in memory only</b> and erased when you close the browser; tick “Remember” to keep it on this computer.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Model</h2>
+    <div class="actions" style="margin-top:0"><button id="load" class="pri">Load models</button><span id="loadmsg" class="msg"></span></div>
+    <div class="filters">
+      <label><input type="checkbox" id="fSchema"> Only structured output (JSON schema)</label>
+      <label><input type="checkbox" id="fFree"> Only free</label>
+      <input id="fText" placeholder="Filter, e.g. gpt, gemini, llama, claude" style="flex:1;min-width:180px">
+    </div>
+    <div class="models" id="models"><div class="m"><span class="meta">Press “Load models”.</span></div></div>
+    <label for="model">Selected model</label>
+    <input id="model" placeholder="e.g. openai/gpt-4o-mini" spellcheck="false">
+    <div class="hint">
+      Embedding, image, audio, speech and moderation models are hidden automatically: they cannot read API responses and answer.
+      Models that support <b>structured output</b> (JSON schema) are listed first: their answers are type-safe and always parse.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. Save &amp; test</h2>
+    <div class="actions" style="margin-top:0"><button id="save" class="pri">Save</button><button id="test">Test connection</button><span id="savemsg" class="msg"></span></div>
+    <div class="hint" style="margin-top:12px">
+      <b>Privacy:</b> when you run an AI search, short excerpts of the captured responses on that page (and their URLs, with secrets masked)
+      are sent to the provider above. Headers and cookies are never sent. Do not use AI search on pages with data you are not allowed to share.
+    </div>
+  </section>
+</main>
+<script src="ai.js"></script>
+<script src="options.js"></script>
+</body>
+</html>
